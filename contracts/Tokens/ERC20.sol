@@ -4,6 +4,8 @@ import "../OpenZeppelin/GSN/Context.sol";
 import "../OpenZeppelin/math/SafeMath.sol";
 import "../OpenZeppelin/utils/Address.sol";
 import "../interfaces/IERC20.sol";
+import "../interfaces/ILocker.sol";
+
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -35,6 +37,8 @@ contract ERC20 is IERC20, Context {
     using Address for address;
     bytes32 public DOMAIN_SEPARATOR;
 
+    ILocker public locker;
+
     mapping (address => uint256) private _balances;
     mapping(address => uint256) public nonces;
 
@@ -46,6 +50,10 @@ contract ERC20 is IERC20, Context {
     string private _symbol;
     uint8 private _decimals;
     bool private _initialized;
+
+    function setLocker(address _locker) external onlyOwner {
+        locker = ILocker(_locker);
+    }
 
     /**
      * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
@@ -255,6 +263,9 @@ contract ERC20 is IERC20, Context {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
+        if (address(locker) != address(0)) {
+            locker.lockOrGetPenalty(sender, recipient);
+        }
         _beforeTokenTransfer(sender, recipient, amount);
 
         _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
